@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello EntrepriseController!
+{% endblock %}
+
+{% block body %}
+	<form action="{{path('recherche_entreprise')}}" method="POST">
+		<input type="text" name="entreprise" id="entreprise">
+		<button type="submit">Rechercher</button>
+	</form>
+{% endblock %}
