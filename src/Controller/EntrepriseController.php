@@ -35,23 +35,13 @@ class EntrepriseController extends AbstractController
                 'q' => $entreprise
             ],
         ]);
-        // $entreprises = json_decode($response->getContent(), true);
-        // // dd($entreprises["results"]);
-        // dd(json_encode($entreprises["results"]));
-        // // dd(json_encode($entreprises["results"]));
-        // $datas = $serializer->deserialize(json_encode($entreprises["results"]), Entreprise::class, 'json');
-        // dd($datas);
+
         $res = $response->toArray();
         $res['results'] = $serializer->denormalize($res['results'], Entreprise::class . '[]');
-        dd($res['results']);
-        return $res;
+        // dd($res['results']);
+        return $this->render('entreprise/show.html.twig', [
+            'entreprises' => $res['results'],
+        ]);
     }
-
-    // public function search(string $q, int $page = 1): array
-    // {
-
-    //     $res = $res->toArray();
-    //     $res['results'] = $this->serializer->denormalize($res['results'], Company::class . '[]');
-    //     return $res;
-    // }
 }
+// 

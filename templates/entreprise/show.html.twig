@@ -1,0 +1,10 @@
+{% block body %}
+	<h1>Entreprises trouvées :
+	</h1>
+	<ul>
+		{# {{entreprises[0].nom_raison_sociale}} #}
+		{% for entreprise in entreprises %}
+			<li>{{ entreprise.nomRaisonSociale }}</li>
+		{% endfor %}
+	</ul>
+{% endblock %}
