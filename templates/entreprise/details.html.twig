@@ -1,0 +1,23 @@
+{% block body %}
+	<h2>{{message}}</h2>
+	<h3>{{entreprise.nomRaisonSociale}}</h3>
+
+	<ul>
+		<li>
+			SIREN :
+			{{entreprise.siren}}
+		</li>
+		<li>
+			SIRET:
+			{{entreprise.siege.siret}}
+		</li>
+		<li>
+			Adresse :
+			{{entreprise.siege.adresse}}
+		</li>
+	</ul>
+	<form action="">
+		<input type="number" name="salaire" id="salaire">
+		<button type="submit">Calculer salaire</button>
+	</form>
+{% endblock %}

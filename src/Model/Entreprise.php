@@ -5,7 +5,7 @@ namespace App\Model;
 class Entreprise
 {
     private string $siren;
-    private string $nom_raison_sociale;
+    private ?string $nom_raison_sociale;
     private array $siege;
 
     public function getSiren(): string
@@ -13,7 +13,7 @@ class Entreprise
         return $this->siren;
     }
 
-    public function getNomRaisonSociale(): string
+    public function getNomRaisonSociale(): ?string
     {
         return $this->nom_raison_sociale;
     }
@@ -28,7 +28,7 @@ class Entreprise
         $this->siren = $siren;
     }
 
-    public function setNomRaisonSociale(string $nom_raison_sociale): void
+    public function setNomRaisonSociale(?string $nom_raison_sociale): void
     {
         $this->nom_raison_sociale = $nom_raison_sociale;
     }

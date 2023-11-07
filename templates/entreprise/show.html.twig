@@ -4,7 +4,28 @@
 	<ul>
 		{# {{entreprises[0].nom_raison_sociale}} #}
 		{% for entreprise in entreprises %}
-			<li>{{ entreprise.nomRaisonSociale }}</li>
+			{% if entreprise.nomRaisonSociale != null %}
+				<li>
+					<a href="{{path('show_entreprise', { 'siren' : entreprise.siren})}}">{{ entreprise.nomRaisonSociale }}</a>
+				</li>
+			{% endif %}
 		{% endfor %}
 	</ul>
+
+	<p>{{page}}</p>
+
+	<form action="{{path('recherche_entreprise')}}" method="POST">
+		<input type="hidden" name="entreprise" value="{{ search }}">
+		<input type="hidden" name="page" value="{{ page - 1 }}">
+
+		<button type="submit">Précédent</button>
+	</form>
+	<form action="{{path('recherche_entreprise')}}" method="POST">
+		<input type="hidden" name="entreprise" value="{{ search }}">
+		<input type="hidden" name="page" value="{{ page + 1 }}">
+
+		<button type="submit">Suivant</button>
+	</form>
+
+
 {% endblock %}
