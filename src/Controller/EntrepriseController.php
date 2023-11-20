@@ -75,15 +75,20 @@ class EntrepriseController extends AbstractController
         $filePath = './siren/entreprises.txt';
 
         // $data = json_encode($result["results"][0]);
-
+        var_dump($filePathCompagnyJson);
         //enregistrer les données dans un fichier 
         try {
             if ($filesystem->exists($filePathCompagnyJson)) {
+                echo 'le fichier existe déjà, on fait rien';
                 // $filesystem->appendToFile($filePath, $data);
             } elseif ($filesystem->exists($filePath)) {
-                $filesystem->appendToFile($filePath, $result["results"][0]["siren"]);
+                echo 'si le fichier entreprise.txt, on ajoute le n° siren dedans';
+                $filesystem->appendToFile($filePath, $result["results"][0]["siren"] . '-elseif');
             } else {
-                $filesystem->dumpFile($filePath, $result["results"][0]["siren"]);
+                echo 'ici';
+                echo $filePathCompagnyJson . '<br>';
+                var_dump($json);
+                $filesystem->dumpFile($filePath, $result["results"][0]["siren"] . '-else');
                 $filesystem->dumpFile($filePathCompagnyCsv, $csv);
                 $filesystem->dumpFile($filePathCompagnyJson, $json);
             }
