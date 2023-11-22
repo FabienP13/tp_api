@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Services\SearchCompany;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,6 +17,7 @@ class EntrepriseController extends AbstractController
 {
     public function __construct(
         private HttpClientInterface $client,
+        private SearchCompany $searchCompany,
     ) {
     }
 
@@ -56,39 +59,32 @@ class EntrepriseController extends AbstractController
     {
         $data = $request->query->all();
         $siren = $data["siren"];
-        $response = $this->client->request('GET', 'https://recherche-entreprises.api.gouv.fr/search', [
-            // these values are automatically encoded before including them in the URL
-            'query' => [
-                'q' => $siren,
-            ],
-        ]);
-        $result = $response->toArray();
-        $entreprise = $serializer->denormalize($result['results'], Entreprise::class . '[]');
+        $company = $this->searchCompany->getCompanyInfos($siren, $serializer);
+        $entreprise = $serializer->denormalize($company["results"], Entreprise::class . '[]');
 
         //sérialiser les données dans un format précis - JSON et CSV
         $json = $serializer->serialize($entreprise[0], 'json');
         $csv = $serializer->serialize($entreprise[0], 'csv', ['csv_delimiter' => ';']);
 
         //Chemin où enregistrer les fichiers 
-        $filePathCompagnyJson = './entreprises/' . $result["results"][0]["siren"] . '.json';
-        $filePathCompagnyCsv = './entreprises/' . $result["results"][0]["siren"] . '.csv';
+        $filePathCompagnyJson = './entreprises/' . $company["results"][0]["siren"] . '.json';
+        $filePathCompagnyCsv = './entreprises/' . $company["results"][0]["siren"] . '.csv';
         $filePath = './siren/entreprises.txt';
 
         // $data = json_encode($result["results"][0]);
-        var_dump($filePathCompagnyJson);
+        // var_dump($filePathCompagnyJson);
         //enregistrer les données dans un fichier 
         try {
-            if ($filesystem->exists($filePathCompagnyJson)) {
-                echo 'le fichier existe déjà, on fait rien';
+            if ($filesystem->exists($filePathCompagnyJson)) { // Si le fichier json/csv existe 
                 // $filesystem->appendToFile($filePath, $data);
-            } elseif ($filesystem->exists($filePath)) {
-                echo 'si le fichier entreprise.txt, on ajoute le n° siren dedans';
-                $filesystem->appendToFile($filePath, $result["results"][0]["siren"] . '-elseif');
+            }
+            //si le fichier entreprise.txt existe ET que le fichier json/csv n'existe pas
+            elseif ($filesystem->exists($filePath) && !$filesystem->exists($filePathCompagnyJson)) {
+                $filesystem->appendToFile($filePath, $company["results"][0]["siren"] . '-');
+                $filesystem->dumpFile($filePathCompagnyCsv, $csv);
+                $filesystem->dumpFile($filePathCompagnyJson, $json);
             } else {
-                echo 'ici';
-                echo $filePathCompagnyJson . '<br>';
-                var_dump($json);
-                $filesystem->dumpFile($filePath, $result["results"][0]["siren"] . '-else');
+                $filesystem->dumpFile($filePath, $company["results"][0]["siren"] . '-');
                 $filesystem->dumpFile($filePathCompagnyCsv, $csv);
                 $filesystem->dumpFile($filePathCompagnyJson, $json);
             }
@@ -101,6 +97,37 @@ class EntrepriseController extends AbstractController
         return $this->render('entreprise/details.html.twig', [
             'entreprise' => $entreprise[0],
             'message' => $message,
+        ]);
+    }
+
+    #[Route('get-details-ursaff', name: 'get_details_ursaff')]
+    public function getDetailsUrsaff(Request $request, NormalizerInterface $serializer,)
+    {
+        //Récupération des params
+        $data = $request->query->all();
+        $salaire = $data["salaire"];
+        $entreprise = $data["entreprise"];
+
+        //On récupère les données de la company
+        $company = $this->searchCompany->getCompanyInfos($entreprise);
+        $entreprise = $serializer->denormalize($company["results"], Entreprise::class . '[]');
+        $typeContrat = ['CDI', 'stage', 'alternance', 'CDD'];
+        // foreach ($typeContrat as $contrat) {
+        //     $contratType = strtolower($contrat);
+        //     $contratType = $this->searchCompany->getUrsaffInfos($salaire, $typeContrat[0])
+        // }
+        // dd('test');
+        $cdi = $this->searchCompany->getUrsaffInfos($salaire, $typeContrat[0]);
+        $stage = $this->searchCompany->getUrsaffInfos($salaire, $typeContrat[1]);
+        $alternance = $this->searchCompany->getUrsaffInfos($salaire, $typeContrat[2]);
+        $cdd = $this->searchCompany->getUrsaffInfos($salaire, $typeContrat[3]);
+
+        return $this->render('entreprise/details.html.twig', [
+            'entreprise' => $entreprise[0],
+            'cdi' => $cdi,
+            'stage' => $stage,
+            'alternance' => $alternance,
+            'cdd' => $cdd,
         ]);
     }
 }
