@@ -1,9 +1,7 @@
 {% block body %}
 	<div style="display: flex; flex-direction: row;">
 		<div style="margin: 5px">
-			{% if message is defined %}
-				<h2>{{message}}</h2>
-			{% endif %}
+
 			<h3>{{entreprise.nomRaisonSociale}}</h3>
 
 			<ul>
@@ -26,56 +24,59 @@
 				<button type="submit">Calculer salaire</button>
 			</form>
 		</div>
-		<div style="margin: 5px">
-			<table border="2">
-				<thead>
-					<tr>
-						<th></th>
-						<th>Salaire net avec impôt</th>
-						<th>Cotisation salariale</th>
-						<th>Coût employeur</th>
-						<th>Gratification minimale</th>
-						<th>Indemnité fin de contrat</th>
-					</tr>
-				</thead>
-				<tbody>
-					<tr>
-						<td>CDI</td>
-						<td>{{cdi["evaluate"][0]["nodeValue"]}}</td>
-						<td>{{cdi["evaluate"][2]["nodeValue"]}}</td>
-						<td>{{cdi["evaluate"][1]["nodeValue"]}}</td>
-						<td></td>
-						<td></td>
-					</tr>
-					<tr>
-						<td>CDD</td>
-						<td>{{cdd["evaluate"][0]["nodeValue"]}}</td>
-						<td>{{cdd["evaluate"][2]["nodeValue"]}}</td>
-						<td>{{cdd["evaluate"][1]["nodeValue"]}}</td>
-						<td></td>
-						<td>{{cdd["evaluate"][3]["nodeValue"]}}</td>
-					</tr>
-					<tr>
-						<td>Alternance</td>
-						<td>{{alternance["evaluate"][0]["nodeValue"]}}</td>
-						<td>{{alternance["evaluate"][2]["nodeValue"]}}</td>
-						<td>{{alternance["evaluate"][1]["nodeValue"]}}</td>
-						<td></td>
-						<td></td>
-					</tr>
-					<tr>
-						<td>Stage</td>
-						<td></td>
-						<td></td>
-						<td></td>
-						<td>{{stage["evaluate"][0]["nodeValue"]}}</td>
-						<td></td>
-					</tr>
+		{% if cdi is defined %}
 
-				</tbody>
-			</table>
-		</div>
 
+			<div style="margin: 5px">
+				<table border="2">
+					<thead>
+						<tr>
+							<th></th>
+							<th>Salaire net avant impôt</th>
+							<th>Cotisation salariale</th>
+							<th>Coût employeur</th>
+							<th>Gratification minimale</th>
+							<th>Indemnité fin de contrat</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td>CDI</td>
+							<td>{{cdi["evaluate"][0]["nodeValue"]}}</td>
+							<td>{{cdi["evaluate"][2]["nodeValue"]}}</td>
+							<td>{{cdi["evaluate"][1]["nodeValue"]}}</td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td>CDD</td>
+							<td>{{cdd["evaluate"][0]["nodeValue"]}}</td>
+							<td>{{cdd["evaluate"][2]["nodeValue"]}}</td>
+							<td>{{cdd["evaluate"][1]["nodeValue"]}}</td>
+							<td></td>
+							<td>{{cdd["evaluate"][3]["nodeValue"]}}</td>
+						</tr>
+						<tr>
+							<td>Alternance</td>
+							<td>{{alternance["evaluate"][0]["nodeValue"]}}</td>
+							<td>{{alternance["evaluate"][2]["nodeValue"]}}</td>
+							<td>{{alternance["evaluate"][1]["nodeValue"]}}</td>
+							<td></td>
+							<td></td>
+						</tr>
+						<tr>
+							<td>Stage</td>
+							<td></td>
+							<td></td>
+							<td></td>
+							<td>{{stage["evaluate"][0]["nodeValue"]}}</td>
+							<td></td>
+						</tr>
+
+					</tbody>
+				</table>
+			</div>
+		{% endif %}
 	</div>
 
 {% endblock %}

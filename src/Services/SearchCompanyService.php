@@ -4,15 +4,19 @@ namespace App\Services;
 
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use App\Model\Entreprise;
 
-class SearchCompany
+class SearchCompanyService
 {
     private string $API_URL = 'https://recherche-entreprises.api.gouv.fr/search';
     private string $URSAFF_API = 'https://mon-entreprise.urssaf.fr/api/v1/evaluate';
 
     public function __construct(
-        private HttpClientInterface $client
+        private HttpClientInterface $client,
+        private NormalizerInterface $serializer
     ) {
+        $this->serializer = $serializer;
     }
 
     public function getCompanyInfos(string $siren): mixed
@@ -20,12 +24,36 @@ class SearchCompany
         $response = $this->client->request('GET', "$this->API_URL?q=$siren");
 
         // return json_decode($response->getContent());
-        return $response->toArray();
+        // return $response->toArray();
+        $res = $response->toArray();
+        $entreprise = $this->serializer->denormalize($res['results'], Entreprise::class . '[]');
+        return $entreprise;
     }
 
     public function getUrsaffInfos(string $salaire, string $contrat): mixed
     {
+        $expressions = $this->getExpressionsByContract($contrat);
+        $data = [
+            'situation' => [
+                'salarié . contrat . salaire brut' => [
+                    'valeur' => $salaire,
+                    'unité' => '€ / mois',
+                ],
+                'salarié . contrat' => '"' . $contrat . '"',
+            ],
+            'expressions' => $expressions,
+        ];
+        $client = HttpClient::create();
+        $response = $client->request('POST', $this->URSAFF_API, [
+            'json' => $data,
+        ]);
+        $content = $response->toArray();
+        // $content = json_decode($response->getContent(), true);
+        return $content;
+    }
 
+    public function getExpressionsByContract($contrat)
+    {
         switch ($contrat) {
             case 'CDI':
                 $expressions = [
@@ -55,21 +83,6 @@ class SearchCompany
                 ];
                 break;
         }
-        $data = [
-            'situation' => [
-                'salarié . contrat . salaire brut' => [
-                    'valeur' => $salaire,
-                    'unité' => '€ / mois',
-                ],
-                'salarié . contrat' => '"' . $contrat . '"',
-            ],
-            'expressions' => $expressions,
-        ];
-        $client = HttpClient::create();
-        $response = $client->request('POST', $this->URSAFF_API, [
-            'json' => $data,
-        ]);
-        $content = $response->toArray();
-        return $content;
+        return $expressions;
     }
 }
