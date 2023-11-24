@@ -22,11 +22,9 @@ class SearchCompanyService
     public function getCompanyInfos(string $siren): mixed
     {
         $response = $this->client->request('GET', "$this->API_URL?q=$siren");
+        $res = json_decode($response->getContent());
+        $entreprise = $this->serializer->deserialize(json_encode($res->results[0]), Entreprise::class, 'json');
 
-        // return json_decode($response->getContent());
-        // return $response->toArray();
-        $res = $response->toArray();
-        $entreprise = $this->serializer->denormalize($res['results'], Entreprise::class . '[]');
         return $entreprise;
     }
 
@@ -47,9 +45,9 @@ class SearchCompanyService
         $response = $client->request('POST', $this->URSAFF_API, [
             'json' => $data,
         ]);
-        $content = $response->toArray();
-        // $content = json_decode($response->getContent(), true);
-        return $content;
+
+        $content = $response->getContent();
+        return json_decode($content);
     }
 
     public function getExpressionsByContract($contrat)

@@ -47,7 +47,7 @@ class EntrepriseController extends AbstractController
         ]);
 
         $res = $response->toArray();
-        $res['results'] = $serializer->denormalize($res['results'], Entreprise::class . '[]');
+        $res["results"] = $serializer->denormalize($res['results'], Entreprise::class . '[]');
 
         return $this->render('entreprise/show.html.twig', [
             'entreprises' => $res['results'],
@@ -63,10 +63,10 @@ class EntrepriseController extends AbstractController
         $company = $this->searchCompanyService->getCompanyInfos($siren, $serializer);
 
         //Vérifier si les fichiers existent 
-        $this->fileService->verifyingFile($company[0]->getSiren(), $company[0]);
+        $this->fileService->verifyingFile($company->getSiren(), $company);
 
         return $this->render('entreprise/details.html.twig', [
-            'entreprise' => $company[0],
+            'entreprise' => $company,
         ]);
     }
 
@@ -88,7 +88,7 @@ class EntrepriseController extends AbstractController
         $cdd = $this->searchCompanyService->getUrsaffInfos($salaire, $typeContrat[3]);
 
         return $this->render('entreprise/details.html.twig', [
-            'entreprise' => $company[0],
+            'entreprise' => $company,
             'cdi' => $cdi,
             'stage' => $stage,
             'alternance' => $alternance,
