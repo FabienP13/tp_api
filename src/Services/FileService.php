@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Finder\Finder;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 
 class FileService
@@ -48,5 +49,18 @@ class FileService
     public function writeInFile(string $siren)
     {
         $this->filesystem->appendToFile($this->filePathSiren, $siren . '-');
+    }
+
+    public function findFiles()
+    {
+        $finder = new Finder();
+        $finder->files()->name('*.json')->in('./entreprises');
+        $fileNameArray = [];
+
+        foreach ($finder as $file) {
+            $fileName = explode('.', $file->getFilename());
+            array_push($fileNameArray, $fileName[0]);
+        }
+        return $fileNameArray;
     }
 }

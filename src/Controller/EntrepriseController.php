@@ -97,8 +97,27 @@ class EntrepriseController extends AbstractController
     }
 
     #[Route('api-ouverte-ent-liste', name: 'api_ouverte_ent_liste', methods: ['GET'])]
-    public function getCompanyList(Request $request)
+    public function getCompanyList(Request $request): Response
     {
+        $listFiles = $this->fileService->findFiles();
+        $compagnies = [];
+
+        if (!$listFiles) {
+            return new Response("Aucune entreprise enregistrée", 200);
+        }
+
+        if ($request->getMethod() !== 'GET') {
+            return new Response('La méthode ' . $request->getMethod() . ' n\'est pas autorisée.', 405);
+        }
+
+        // Liste des entreprises présentes (HTTP 200) – format JSON
+        // Liste des entreprises présentes (HTTP 200) – format CSV
+        // Format non prit en compte (HTTP 406)
+
+        foreach ($listFiles as $company) {
+            array_push($compagnies, $this->searchCompanyService->getCompanyInfos($company));
+        }
+        dd($compagnies);
     }
 }
 // 
