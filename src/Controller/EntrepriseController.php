@@ -18,6 +18,9 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 class EntrepriseController extends AbstractController
 {
+    private const LOGIN = 'root';
+    private const PASSWORD = 'root';
+    private const filePath = "./entreprises/";
     public function __construct(
         private HttpClientInterface $client,
         private SearchCompanyService $searchCompanyService,
@@ -236,6 +239,115 @@ class EntrepriseController extends AbstractController
                 $messagesErrors .= "$attributeError : $message\n";
             }
             throw new BadRequestException($messagesErrors);
+        }
+    }
+    /***************************
+     ******** EXERCICE 4 *******
+     ***************************/
+
+    #[Route('api-protege', name: 'update_company', methods: ['PATCH'])]
+    public function updateCompany(Request $request)
+    {
+        $isAuth = $this->isAuthenticated($request->headers);
+        if ($isAuth === false) {
+            return new Response('Vous n\'êtes pas authentifié.', 401);
+        }
+
+        if ($request->getMethod() !== 'PATCH') {
+            return new Response('La méthode ' . $request->getMethod()  . ' n\'est pas autorisée.', 405);
+        }
+
+        //Récuparation des données 
+        $datas = $request->getContent();
+        $isJson = json_decode($datas, true);
+
+        if (!$isJson) {
+            return new Response('Format JSON invalide', 400);
+        }
+
+        $siren = $isJson["siren"];
+        $files = $this->fileService->findFiles("$siren.json");
+        $fileExist = [];
+        foreach ($files as $file) {
+            $fileExist = $file->getContents();
+        }
+
+        if (!$fileExist) {
+            return new Response('Aucune entreprise trouvée avec ce siren.', 404);
+        }
+
+        //Récupération entreprise
+        $contentFile = file_get_contents(self::filePath . $siren . '.json');
+        $jsonData = json_decode($contentFile, true);
+
+        $messageErreur = '';
+        // Met à jour les champs avec les nouvelles valeurs
+        foreach ($isJson as $key => $value) {
+            if (array_key_exists($key, $jsonData)) {
+                $jsonData[$key] = $value;
+            } else {
+                $messageErreur .= 'La propriété ' . $key . ' n\'existe pas' . " \n";
+            }
+        }
+        if ($messageErreur) {
+            return new Response($messageErreur, 400);
+        }
+
+        file_put_contents(self::filePath . $siren . '.json', json_encode($jsonData, JSON_PRETTY_PRINT));
+        // Entreprise modifiée (HTTP 200) (possible message avec lien vers la nouvelle ressource)
+        return new Response('Entreprise modifiée ! ', 201);
+    }
+    #[Route('api-protege', name: 'delete_company', methods: ['DELETE'])]
+    public function deleteCompany(Request $request)
+    {
+        $isAuth = $this->isAuthenticated($request->headers);
+        if ($isAuth === false) {
+            return new Response('Vous n\'êtes pas authentifié.', 401);
+        }
+
+        if ($request->getMethod() !== 'DELETE') {
+            return new Response('La méthode ' . $request->getMethod()  . ' n\'est pas autorisée.', 405);
+        }
+
+        //Récuparation des données 
+        $datas = $request->getContent();
+        $isJson = json_decode($datas, true);
+
+        if (!$isJson) {
+            return new Response('Format JSON invalide', 400);
+        }
+        $siren = $isJson["siren"];
+        $files = $this->fileService->findFiles("$siren.json");
+        $fileExist = [];
+        foreach ($files as $file) {
+            $fileExist = $file->getContents();
+        }
+
+        if (!$fileExist) {
+            return new Response('Aucune entreprise trouvée avec ce siren.', 404);
+        }
+
+        $this->fileService->deleteFile($siren);
+        return new Response('L\'Entreprise a bien été supprimée', 201);
+    }
+
+    private function isAuthenticated($headers)
+    {
+
+        //Récupération du login/password serveur
+        $login = self::LOGIN;
+        $password = self::PASSWORD;
+        $tokenServeur = base64_encode("$login:$password");
+
+        //Vérification présence Authorization
+        if (!$headers->get('Authorization')) {
+            return false;
+        }
+
+        $tokenClient = explode(' ', $headers->get('Authorization'));
+
+        if ($tokenClient[0] != 'Basic' || $tokenClient[1] != $tokenServeur) {
+            return false;
         }
     }
 }

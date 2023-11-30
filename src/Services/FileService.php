@@ -51,18 +51,13 @@ class FileService
         $this->filesystem->appendToFile($this->filePathSiren, $siren . '-');
     }
 
-    // public function findFiles()
-    // {
-    //     $finder = new Finder();
-    //     $finder->files()->name('*.json')->in('./entreprises');
-    //     $fileNameArray = [];
+    public function deleteFile($siren)
+    {
+        foreach ($this->formatsFile as $format) {
+            $this->filesystem->remove($this->filePath . $siren . '.' . $format);
+        }
+    }
 
-    //     foreach ($finder as $file) {
-    //         $fileName = explode('.', $file->getFilename());
-    //         array_push($fileNameArray, $fileName[0]);
-    //     }
-    //     return $fileNameArray;
-    // }
     public function findFiles(string $regexFileName)
     {
         $finder = new Finder();
