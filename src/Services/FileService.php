@@ -51,16 +51,22 @@ class FileService
         $this->filesystem->appendToFile($this->filePathSiren, $siren . '-');
     }
 
-    public function findFiles()
+    // public function findFiles()
+    // {
+    //     $finder = new Finder();
+    //     $finder->files()->name('*.json')->in('./entreprises');
+    //     $fileNameArray = [];
+
+    //     foreach ($finder as $file) {
+    //         $fileName = explode('.', $file->getFilename());
+    //         array_push($fileNameArray, $fileName[0]);
+    //     }
+    //     return $fileNameArray;
+    // }
+    public function findFiles(string $regexFileName)
     {
         $finder = new Finder();
-        $finder->files()->name('*.json')->in('./entreprises');
-        $fileNameArray = [];
-
-        foreach ($finder as $file) {
-            $fileName = explode('.', $file->getFilename());
-            array_push($fileNameArray, $fileName[0]);
-        }
-        return $fileNameArray;
+        $finder->in('./entreprises');
+        return $finder->files()->name($regexFileName);
     }
 }

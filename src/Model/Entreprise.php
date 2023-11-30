@@ -2,10 +2,17 @@
 
 namespace App\Model;
 
+use Symfony\Component\Validator\Constraints as Assert;
+
+
 class Entreprise
 {
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 9, max: 9)]
     private string $siren;
-    private ?string $nom_raison_sociale;
+    #[Assert\NotBlank]
+    private string $nom_raison_sociale;
+    #[Assert\NotBlank]
     private array $siege;
 
     public function getSiren(): string

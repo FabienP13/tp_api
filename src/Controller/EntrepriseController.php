@@ -9,10 +9,12 @@ use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Model\Entreprise;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 class EntrepriseController extends AbstractController
 {
@@ -20,9 +22,13 @@ class EntrepriseController extends AbstractController
         private HttpClientInterface $client,
         private SearchCompanyService $searchCompanyService,
         private FileService $fileService,
+        private ValidatorInterface  $validator
     ) {
     }
 
+    /***************************
+     ******** EXERCICE 1 *******
+     ***************************/
     #[Route('/entreprise', name: 'app_entreprise')]
     public function index(): Response
     {
@@ -70,8 +76,11 @@ class EntrepriseController extends AbstractController
         ]);
     }
 
+    /***************************
+     ******** EXERCICE 2 *******
+     ***************************/
     #[Route('get-details-ursaff', name: 'get_details_ursaff')]
-    public function getDetailsUrsaff(Request $request, NormalizerInterface $serializer,)
+    public function getDetailsUrsaff(Request $request)
     {
         //Récupération des params
         $data = $request->query->all();
@@ -96,13 +105,16 @@ class EntrepriseController extends AbstractController
         ]);
     }
 
+    /***************************
+     ******** EXERCICE 3 *******
+     ***************************/
     #[Route('api-ouverte-ent-liste', name: 'api_ouverte_ent_liste', methods: ['GET'])]
-    public function getCompanyList(Request $request): Response
+    public function getCompanyList(Request $request, NormalizerInterface $serializer): Response
     {
-        $listFiles = $this->fileService->findFiles();
-        $compagnies = [];
+        $format = $request->headers->get('Accept');
 
-        if (!$listFiles) {
+        $files =  $this->fileService->findFiles('*.json');
+        if (!$files) {
             return new Response("Aucune entreprise enregistrée", 200);
         }
 
@@ -110,14 +122,120 @@ class EntrepriseController extends AbstractController
             return new Response('La méthode ' . $request->getMethod() . ' n\'est pas autorisée.', 405);
         }
 
-        // Liste des entreprises présentes (HTTP 200) – format JSON
-        // Liste des entreprises présentes (HTTP 200) – format CSV
-        // Format non prit en compte (HTTP 406)
+        if ($format == 'application/json') {
 
-        foreach ($listFiles as $company) {
-            array_push($compagnies, $this->searchCompanyService->getCompanyInfos($company));
+            foreach ($files as $file) {
+                $datas = json_decode($file->getContents());
+                $companies[] = $datas;
+            }
+            $response = new Response(json_encode($companies), 200);
+            $response->headers->set('Content-Type', 'application/json');
+            return $response;
+        } else if ($format == 'application/csv') {
+
+            $files =  $this->fileService->findFiles('*.csv');
+
+            foreach ($files as $file) {
+                $datas = $file->getContents();
+                $companies[] = $datas;
+            }
+
+            $response = new Response(json_encode($companies), 200);
+            $response->headers->set('Content-Type', 'application/csv');
+            return $response;
+        } else {
+            return new Response('Format non pris en compte', 406);
         }
-        dd($compagnies);
+    }
+
+    #[Route('api-ouverte-ent-liste-siren', name: 'api_ouverte_ent_liste_siren', methods: ['GET'])]
+    public function getCompanyBySiren(Request $request): Response
+    {
+        if ($request->getMethod() !== 'GET') {
+            return new Response('La méthode ' . $request->getMethod() . ' n\'est pas autorisée.', 405);
+        }
+
+        $siren = $request->query->get('siren'); //récuperation du param ?siren
+        $company = $this->searchCompanyService->getCompanyInfos($siren); //vérification que la company existe
+
+        if (!$company) { //Si elle n'existe pas => erreur 404
+            return new Response("Aucune entreprise trouvée pour ce siren", 404);
+        } else { // sinon je renvoie les données souhaitées au format JSON avec un code 200
+
+            $companyInfos = [
+                'raison sociale' => $company->getNomRaisonSociale(),
+                'adresse' => $company->getSiege()["adresse"],
+                'siret' => $company->getSiege()["siret"]
+            ];
+
+            $response = new Response(json_encode($companyInfos), 200);
+            $response->headers->set('Content-Type', 'application/json');
+            return $response;
+        }
+    }
+
+    #[Route('api-ouverte-entreprise', name: 'create_company', methods: ['POST'])]
+    public function createCompany(Request $request, NormalizerInterface $serializer): Response
+    {
+        $datas = $request->getContent();
+
+        if ($request->getMethod() !== 'POST') {
+            return new Response('La méthode ' . $request->getMethod()  . ' n\'est pas autorisée.', 405);
+        }
+
+        $newCompany = $serializer->deserialize($datas, Entreprise::class, 'json');
+        $error = $this->validationDatas($newCompany);
+
+        if ($error == null) {
+            $siren = $newCompany->getSiren();
+            $files = $this->fileService->findFiles("$siren.json");
+            $fileExist = [];
+            foreach ($files as $file) {
+                $fileExist = $file->getContents();
+            }
+
+            if ($fileExist) {
+                return new Response('L\'entreprise ' . $newCompany->getNomRaisonSociale()  . ' existe déjà.', 409);
+            } else {
+                $this->fileService->verifyingFile($newCompany->getSiren(), $newCompany);
+                return new Response('L\'entreprise a bien été créée :  ' . $serializer->serialize($newCompany, 'json'), 201);
+            }
+        }
+    }
+
+    public function validationDatas($datas)
+    {
+        // Je fais la validation de mes asserts de mon Model Entreprise.php
+        $errors = $this->validator->validate($datas);
+
+
+        //Je cherche à valider les champs supplémentaires de mon objet 
+        $errors->addAll(
+            $this->validator->validate($datas->getSiege()['code_postale'], [
+                new Assert\NotBlank([
+                    'message' => 'La valeur du code_postale ne doit pas être vide'
+                ]),
+                new Assert\Regex([
+                    'pattern' => '/^\d{5}$/',
+                    'message' => 'Le Code postale doit contenir exactement 5 chiffres',
+                ]),
+            ])
+        );
+        $errors->addAll(
+            $this->validator->validate($datas->getSiege()['ville'], new Assert\NotBlank([
+                'message' => 'Vous devez renseigner une ville pour l\'entreprise',
+            ]))
+        );
+
+        if (count($errors) > 0) {
+
+            $messagesErrors = "";
+            foreach ($errors as $error) {
+                $message = $error->getMessage();
+                $attributeError = $error->getPropertyPath();
+                $messagesErrors .= "$attributeError : $message\n";
+            }
+            throw new BadRequestException($messagesErrors);
+        }
     }
 }
-// 
